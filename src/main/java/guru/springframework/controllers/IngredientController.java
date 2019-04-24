@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import reactor.core.publisher.Mono;
 
 /**
  * Created by jt on 6/28/17.
@@ -44,7 +45,7 @@ public class IngredientController {
     @GetMapping("recipe/{recipeId}/ingredient/{id}/show")
     public String showRecipeIngredient(@PathVariable String recipeId,
                                        @PathVariable String id, Model model){
-        model.addAttribute("ingredient", ingredientService.findByRecipeIdAndIngredientId(recipeId, id));
+        model.addAttribute("ingredient", ingredientService.findByRecipeIdAndIngredientId(recipeId, id).block());
         return "recipe/ingredient/show";
     }
 
@@ -70,7 +71,7 @@ public class IngredientController {
     @GetMapping("recipe/{recipeId}/ingredient/{id}/update")
     public String updateRecipeIngredient(@PathVariable String recipeId,
                                          @PathVariable String id, Model model){
-        model.addAttribute("ingredient", ingredientService.findByRecipeIdAndIngredientId(recipeId, id));
+        model.addAttribute("ingredient", ingredientService.findByRecipeIdAndIngredientId(recipeId, id).block());
 
         model.addAttribute("uomList", unitOfMeasureService.listAllUoms().collectList().block());
         return "recipe/ingredient/ingredientform";
@@ -78,19 +79,20 @@ public class IngredientController {
 
     @PostMapping("recipe/{recipeId}/ingredient")
     public String saveOrUpdate(@ModelAttribute IngredientCommand command){
-        IngredientCommand savedCommand = ingredientService.saveIngredientCommand(command);
+        Mono<IngredientCommand> savedCommand = ingredientService.saveIngredientCommand(command);
 
-        log.debug("saved ingredient id:" + savedCommand.getId());
+        log.debug("saved ingredient id:" + savedCommand.block().getId());
 
-        return "redirect:/recipe/" + savedCommand.getRecipeId() + "/ingredient/" + savedCommand.getId() + "/show";
+        return "redirect:/recipe/" + savedCommand.block().getRecipeId() + "/ingredient/" + savedCommand.block().getId() + "/show";
     }
 
     @GetMapping("recipe/{recipeId}/ingredient/{id}/delete")
     public String deleteIngredient(@PathVariable String recipeId,
                                    @PathVariable String id){
 
+
         log.debug("deleting ingredient id:" + id);
-        ingredientService.deleteById(recipeId, id);
+        ingredientService.deleteById(recipeId, id).block();
 
         return "redirect:/recipe/" + recipeId + "/ingredients";
     }
